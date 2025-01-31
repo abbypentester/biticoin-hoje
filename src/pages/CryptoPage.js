@@ -18,12 +18,16 @@ const CryptoPage = () => {
   const [error, setError] = useState(null);
   const [trendingCryptos, setTrendingCryptos] = useState([]);
 
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+                        ? 'https://api.cotacaohoje.site'
+                        : 'http://localhost:5014';
+
   /**
    * Função para buscar e mapear tendências com criptomoedas reais.
    */
   const fetchAndMapTrends = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/generated-pages`);
+      const response = await axios.get(`${API_BASE_URL}/api/map-trends`);
       const generatedPages = Array.isArray(response.data) ? response.data : [];
       setTrendingCryptos(generatedPages); // Atualiza o estado com os dados das páginas geradas
     } catch (error) {
@@ -47,7 +51,7 @@ const CryptoPage = () => {
 
       // Faz a requisição ao backend
       const priceResponse = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/coin-price?symbol=${moeda}`
+        `${API_BASE_URL}/api/coin-price?symbol=${moeda}`
       );
 
       if (!priceResponse.data || !priceResponse.data.price) {
@@ -58,10 +62,10 @@ const CryptoPage = () => {
       setIcon(priceResponse.data.icon || `https://www.binance.com/favicon.ico`); // Ícone dinâmico ou padrão
 
       // Atualiza as meta tags para SEO
-      document.title = `Cotação do ${moeda.toUpperCase()} Hoje: R$ ${priceResponse.data.price} | Acompanhe em Tempo Real`;
+      document.title = `Cotação do ${moeda ? moeda.toUpperCase() : ''} Hoje: R$ ${priceResponse.data.price} | Acompanhe em Tempo Real`;
       const metaDescription = document.querySelector("meta[name='description']");
       if (metaDescription) {
-        metaDescription.content = `Veja a cotação do ${moeda.toUpperCase()} hoje em tempo real: R$ ${priceResponse.data.price}.`;
+        metaDescription.content = `Veja a cotação do ${moeda ? moeda.toUpperCase() : ''} hoje em tempo real: R$ ${priceResponse.data.price}.`;
       }
     } catch (error) {
       console.error("Erro ao buscar dados da moeda:", error.message);
