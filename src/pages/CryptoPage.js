@@ -9,7 +9,6 @@ import Converter from "../components/Converter";
 import ConversionTable from "../components/ConversionTable";
 import EducationalSection from "../components/EducationalSection";
 import FAQ from "../components/FAQ";
-import { fetchMappedTrends } from "../utils/trends";
 
 const CryptoPage = () => {
   const { moeda } = useParams(); // Captura o parâmetro da URL
@@ -24,10 +23,11 @@ const CryptoPage = () => {
    */
   const fetchAndMapTrends = async () => {
     try {
-      const trends = await fetchMappedTrends();
-      setTrendingCryptos(trends); // Atualiza o estado com os dados das tendências mapeadas
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/generated-pages`);
+      const generatedPages = Array.isArray(response.data) ? response.data : [];
+      setTrendingCryptos(generatedPages); // Atualiza o estado com os dados das páginas geradas
     } catch (error) {
-      console.error("Erro ao buscar tendências mapeadas:", error.message);
+      console.error("Erro ao buscar páginas geradas:", error.message);
     }
   };
 
@@ -35,13 +35,19 @@ const CryptoPage = () => {
    * Função para buscar o preço atual de uma criptomoeda.
    */
   const fetchPriceData = async () => {
+    if (!moeda) {
+      setError("Moeda não fornecida.");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
       // Faz a requisição ao backend
       const priceResponse = await axios.get(
-        `http://localhost:5014/api/coin-price?symbol=${moeda}`
+        `${process.env.REACT_APP_API_URL}/api/coin-price?symbol=${moeda}`
       );
 
       if (!priceResponse.data || !priceResponse.data.price) {
@@ -85,21 +91,23 @@ const CryptoPage = () => {
   /**
    * Configuração de Schema.org para SEO avançado.
    */
-  const schemaMarkup = {
-    "@context": "https://schema.org",
-    "@type": "FinancialService",
-    name: `${moeda.toUpperCase()} Hoje`,
-    url: `https://www.cotacaohoje.site/cotacao/${moeda.toLowerCase()}`,
-    description: `Veja a cotação do ${moeda.toUpperCase()} hoje em tempo real e descubra o valor atualizado em reais (BRL).`,
-    logo: icon,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "BRL",
-      price: priceBRL,
-      availability: "https://schema.org/InStock",
-      url: `https://www.cotacaohoje.site/comprar/${moeda.toLowerCase()}`,
-    },
-  };
+  const schemaMarkup = moeda
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FinancialService",
+        name: `${moeda.toUpperCase()} Hoje`,
+        url: `https://www.cotacaohoje.site/cotacao/${moeda.toLowerCase()}`,
+        description: `Veja a cotação do ${moeda.toUpperCase()} hoje em tempo real e descubra o valor atualizado em reais (BRL).`,
+        logo: icon,
+        offers: {
+          "@type": "Offer",
+          priceCurrency: "BRL",
+          price: priceBRL,
+          availability: "https://schema.org/InStock",
+          url: `https://www.cotacaohoje.site/comprar/${moeda.toLowerCase()}`,
+        },
+      }
+    : {};
 
   /**
    * Exibe mensagem de carregamento ou erro, caso necessário.
@@ -121,7 +129,7 @@ const CryptoPage = () => {
    */
   return (
     <>
-      <script type="application/ld+json">{JSON.stringify(schemaMarkup)}</script>
+      {moeda && <script type="application/ld+json">{JSON.stringify(schemaMarkup)}</script>}
       <Header moeda={moeda} />
       <Hero moeda={moeda} />
       <ChartSection moeda={moeda} />
@@ -149,13 +157,13 @@ const CryptoPage = () => {
                   borderRadius: "8px",
                 }}
               >
-                <h3>{crypto.trend}</h3>
+                <h3>{crypto.term}</h3>
                 <p>
                   Criptomoeda: {crypto.coin.name.toUpperCase()} (
                   {crypto.coin.symbol.toUpperCase()})
                 </p>
-                <p>Preço Atual: R$ {crypto.price || "Indisponível"}</p>
-                <p>Fonte: {crypto.source}</p>
+                <p>Preço Atual: R$ {crypto.coin.price || "Indisponível"}</p>
+                <p>Fonte: {crypto.coin.source}</p>
                 <p>
                   <a href={crypto.url} style={{ color: "#2563eb" }}>
                     Acessar página
